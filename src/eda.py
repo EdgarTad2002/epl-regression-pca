@@ -90,31 +90,50 @@ def plot_grouped_pairplots(df: pd.DataFrame) -> list[str]:
 
     Returns list of saved file paths.
     """
+    title_map = {
+        "scoring":     "Scoring & Expected Goals",
+        "performance": "Performance Metrics (Influence / Creativity / Threat)",
+        "involvement": "Involvement, Discipline & Points",
+    }
+
     paths = []
     for group_name, feats in GROUPS.items():
         feats = [f for f in feats if f in df.columns]
 
-        g = sns.pairplot(
-            df[feats + ["position"]].dropna(),
-            hue="position",
-            palette=PALETTE,
-            diag_kind="kde",
-            plot_kws=dict(alpha=0.5, s=22, linewidth=0),
-            diag_kws=dict(linewidth=1.8),
-            corner=True,       # lower triangle only — cleaner
-        )
-        title_map = {
-            "scoring":     "Scoring & Expected Goals",
-            "performance": "Performance Metrics (Influence / Creativity / Threat)",
-            "involvement": "Involvement, Discipline & Points",
-        }
+        # larger font scale so axis labels are readable in the PDF
+        with sns.plotting_context("notebook", font_scale=1.6):
+            g = sns.pairplot(
+                df[feats + ["position"]].dropna(),
+                hue="position",
+                palette=PALETTE,
+                diag_kind="kde",
+                plot_kws=dict(alpha=0.5, s=30, linewidth=0),
+                diag_kws=dict(linewidth=2.0),
+                corner=True,
+            )
+
+        # bold axis labels
+        for ax in g.axes.flatten():
+            if ax is None:
+                continue
+            if ax.get_xlabel():
+                ax.set_xlabel(ax.get_xlabel(), fontsize=14, fontweight="bold")
+            if ax.get_ylabel():
+                ax.set_ylabel(ax.get_ylabel(), fontsize=14, fontweight="bold")
+            ax.tick_params(labelsize=11)
+
         g.figure.suptitle(
             f"Pairplot — {title_map[group_name]}\nPremier League 2023-24",
-            y=1.02, fontsize=12, fontweight="bold",
+            y=1.03, fontsize=14, fontweight="bold",
         )
 
+        # larger legend text
+        g._legend.set_title("Position", prop={"size": 12, "weight": "bold"})
+        for text in g._legend.get_texts():
+            text.set_fontsize(11)
+
         path = os.path.join(FIG_DIR, f"pairplot_{group_name}.png")
-        g.savefig(path, dpi=150, bbox_inches="tight")
+        g.savefig(path, dpi=180, bbox_inches="tight")
         plt.close("all")
         print(f"Saved → {path}")
         paths.append(path)
@@ -136,16 +155,16 @@ def plot_correlation_heatmap(df: pd.DataFrame) -> str:
     sns.heatmap(
         corr, mask=mask, annot=True, fmt=".2f",
         cmap="RdYlGn", center=0, vmin=-1, vmax=1,
-        linewidths=0.4, linecolor="white",
+        linewidths=0.5, linecolor="white",
         square=True, ax=ax,
-        annot_kws={"size": 8},
+        annot_kws={"size": 10, "weight": "bold"},
     )
     ax.set_title(
         "Correlation Heatmap — Premier League 2023-24 Player Stats",
-        fontsize=13, fontweight="bold", pad=12,
+        fontsize=14, fontweight="bold", pad=14,
     )
-    ax.tick_params(axis="x", rotation=45, labelsize=9)
-    ax.tick_params(axis="y", rotation=0,  labelsize=9)
+    ax.tick_params(axis="x", rotation=45, labelsize=11)
+    ax.tick_params(axis="y", rotation=0,  labelsize=11)
 
     path = os.path.join(FIG_DIR, "correlation_heatmap.png")
     fig.savefig(path, dpi=150, bbox_inches="tight")
